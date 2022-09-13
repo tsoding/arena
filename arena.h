@@ -53,6 +53,10 @@ typedef struct {
 Region *new_region(size_t capacity);
 void free_region(Region *r);
 
+// TODO: snapshot/rewind capability for the arena
+// - Snapshot should be combination of a->end and a->end->count. 
+// - Rewinding should be restoring a->end and a->end->count from the snapshot and
+// setting count-s of all the Region-s after the remembered a->end to 0.
 void *arena_alloc(Arena *a, size_t size_bytes);
 void arena_reset(Arena *a);
 void arena_free(Arena *a);
@@ -89,6 +93,12 @@ void free_region(Region *r)
 #else
 #  error "Unknown Arena backend"
 #endif
+
+// TODO: add debug statistic collection mode for arena
+// Should collect things like:
+// - How many times new_region was called
+// - How many times existing region was skipped
+// - How many times allocation exceeded REGION_DEFAULT_CAPACITY
 
 void *arena_alloc(Arena *a, size_t size_bytes)
 {
