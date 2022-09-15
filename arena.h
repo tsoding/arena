@@ -22,7 +22,11 @@
 #ifndef ARENA_H_
 #define ARENA_H_
 
+#include <stddef.h>
+#include <stdint.h>
+
 #ifndef ARENA_ASSERT
+#include <assert.h>
 #define ARENA_ASSERT assert
 #endif
 
@@ -66,6 +70,8 @@ void arena_free(Arena *a);
 #ifdef ARENA_IMPLEMENTATION
 
 #if ARENA_BACKEND == ARENA_BACKEND_LIBC_MALLOC
+#include <stdlib.h>
+
 // TODO: instead of accepting specific capacity new_region() should accept the size of the object we want to fit into the region
 // It should be up to new_region() to decide the actual capacity to allocate
 Region *new_region(size_t capacity)
