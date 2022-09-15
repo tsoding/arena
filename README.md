@@ -6,6 +6,10 @@
 
 ## Quick Start
 
+> The truly reusable code is the one that you can simply copy-paste.
+
+The library itself does not require any special building. You can simple copy-paste [./arena.h](./arena.h) to your project and `#include` it.
+
 ```c
 #define ARENA_IMPLEMENTATION
 #include "arena.h"
