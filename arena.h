@@ -58,10 +58,12 @@ Region *new_region(size_t capacity);
 void free_region(Region *r);
 
 // TODO: snapshot/rewind capability for the arena
-// - Snapshot should be combination of a->end and a->end->count. 
+// - Snapshot should be combination of a->end and a->end->count.
 // - Rewinding should be restoring a->end and a->end->count from the snapshot and
 // setting count-s of all the Region-s after the remembered a->end to 0.
 void *arena_alloc(Arena *a, size_t size_bytes);
+void *arena_realloc(Arena *a, void *oldptr, size_t oldsz, size_t newsz);
+
 void arena_reset(Arena *a);
 void arena_free(Arena *a);
 
@@ -133,6 +135,18 @@ void *arena_alloc(Arena *a, size_t size_bytes)
     void *result = &a->end->data[a->end->count];
     a->end->count += size;
     return result;
+}
+
+void *arena_realloc(Arena *a, void *oldptr, size_t oldsz, size_t newsz)
+{
+    if (newsz <= oldsz) return oldptr;
+    void *newptr = arena_alloc(a, newsz);
+    char *newptr_char = newptr;
+    char *oldptr_char = oldptr;
+    for (size_t i = 0; i < oldsz; ++i) {
+        newptr_char[i] = oldptr_char[i];
+    }
+    return newptr;
 }
 
 void arena_reset(Arena *a)
