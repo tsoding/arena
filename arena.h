@@ -133,17 +133,7 @@ void free_region(Region *r)
         GetCurrentProcess(),        /* Deallocate from current process address space */
         (LPVOID)r,                  /* Address to deallocate */
         0,                          /* Bytes to deallocate ( Unknown, deallocate entire page ) */
-        MEM_DECOMMIT                /* Decommit page */
-    );
-
-    if (FALSE == free_result)
-        ARENA_ASSERT(0 && "VirtualFreeEx() failed.");
-
-    free_result = VirtualFreeEx(
-        GetCurrentProcess(),        /* Deallocate from current process address space */
-        (LPVOID)r,                  /* Address to deallocate */
-        0,                          /* Bytes to deallocate ( Unknown, deallocate entire page ) */
-        MEM_RELEASE                 /* Release page */
+        MEM_RELEASE                 /* Release the page ( And implicitly decommit it ) */
     );
 
     if (FALSE == free_result)
