@@ -95,7 +95,51 @@ void free_region(Region *r)
 #elif ARENA_BACKEND == ARENA_BACKEND_LINUX_MMAP
 #  error "TODO: Linux mmap backend is not implemented yet"
 #elif ARENA_BACKEND == ARENA_BACKEND_WIN32_VIRTUALALLOC
-#  error "TODO: Win32 VirtualAlloc backend is not implemented yet"
+
+#if !defined(_WIN32)
+#  error "Current platform is not Windows"
+#endif
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+#define INV_HANDLE(x)       (((x) == NULL) || ((x) == INVALID_HANDLE_VALUE))
+
+Region *new_region(size_t capacity)
+{
+    SIZE_T size_bytes = sizeof(Region) + sizeof(uintptr_t) * capacity;
+    Region *r = VirtualAllocEx(
+        GetCurrentProcess(),      /* Allocate in current process address space */
+        NULL,                     /* Unknown position */
+        size_bytes,               /* Bytes to allocate */
+        MEM_COMMIT | MEM_RESERVE, /* Reserve and commit allocated page */
+        PAGE_READWRITE            /* Permissions ( Read/Write )*/
+    );
+    if (INV_HANDLE(r))
+        ARENA_ASSERT(0 && "VirtualAllocEx() failed.");
+
+    r->next = NULL;
+    r->count = 0;
+    r->capacity = capacity;
+    return r;
+}
+
+void free_region(Region *r)
+{
+    if (INV_HANDLE(r))
+        return;
+
+    BOOL free_result = VirtualFreeEx(
+        GetCurrentProcess(),        /* Deallocate from current process address space */
+        (LPVOID)r,                  /* Address to deallocate */
+        0,                          /* Bytes to deallocate ( Unknown, deallocate entire page ) */
+        MEM_RELEASE                 /* Release the page ( And implicitly decommit it ) */
+    );
+
+    if (FALSE == free_result)
+        ARENA_ASSERT(0 && "VirtualFreeEx() failed.");
+}
+
 #elif ARENA_BACKEND == ARENA_BACKEND_WASM_HEAPBASE
 #  error "TODO: WASM __heap_base backend is not implemented yet"
 #else
