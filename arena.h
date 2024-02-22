@@ -93,7 +93,27 @@ void free_region(Region *r)
     free(r);
 }
 #elif ARENA_BACKEND == ARENA_BACKEND_LINUX_MMAP
-#  error "TODO: Linux mmap backend is not implemented yet"
+#include <unistd.h>
+#include <sys/mman.h>
+
+Region *new_region(size_t capacity)
+{
+    size_t size_bytes = sizeof(Region) + sizeof(uintptr_t) * capacity;
+    Region *r = mmap(NULL, size_bytes, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+    ARENA_ASSERT(r != MAP_FAILED);
+    r->next = NULL;
+    r->count = 0;
+    r->capacity = capacity;
+    return r;
+}
+
+void free_region(Region *r)
+{
+    size_t size_bytes = sizeof(Region) + sizeof(uintptr_t) * r->capacity;
+    int ret = munmap(r, size_bytes);
+    ARENA_ASSERT(ret == 0);
+}
+
 #elif ARENA_BACKEND == ARENA_BACKEND_WIN32_VIRTUALALLOC
 
 #if !defined(_WIN32)
