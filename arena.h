@@ -118,7 +118,8 @@ Region *new_region(size_t capacity)
 
 void free_region(Region *r)
 {
-    ARENA_ASSERT(munmap(r, r->capacity) == 0);
+    int ret = munmap(r, r->capacity);
+    ARENA_ASSERT(ret == 0);
 }
 
 #elif ARENA_BACKEND == ARENA_BACKEND_WIN32_VIRTUALALLOC
