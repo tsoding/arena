@@ -98,16 +98,7 @@ void free_region(Region *r)
 
 Region *new_region(size_t capacity)
 {
-    long page_size = sysconf(_SC_PAGE_SIZE);
-    ARENA_ASSERT(page_size > 0);
     size_t size_bytes = sizeof(Region) + sizeof(uintptr_t) * capacity;
-
-    //round to multiple of page_size
-    size_t remainder = size_bytes % page_size;
-    if (remainder != 0) {
-        size_bytes += (page_size - remainder);
-    }
-
     Region *r = mmap(NULL, size_bytes, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
     ARENA_ASSERT(r != MAP_FAILED);
     r->next = NULL;
@@ -118,7 +109,8 @@ Region *new_region(size_t capacity)
 
 void free_region(Region *r)
 {
-    int ret = munmap(r, r->capacity);
+    size_t size_bytes = sizeof(Region) + sizeof(uintptr_t) * r->capacity;
+    int ret = munmap(r, size_bytes);
     ARENA_ASSERT(ret == 0);
 }
 
