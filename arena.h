@@ -80,7 +80,7 @@ Region *new_region(size_t capacity)
 {
     size_t size_bytes = sizeof(Region) + sizeof(uintptr_t)*capacity;
     // TODO: it would be nice if we could guarantee that the regions are allocated by ARENA_BACKEND_LIBC_MALLOC are page aligned
-    Region *r = malloc(size_bytes);
+    Region *r = (Region*)malloc(size_bytes);
     ARENA_ASSERT(r);
     r->next = NULL;
     r->count = 0;
@@ -205,8 +205,8 @@ void *arena_realloc(Arena *a, void *oldptr, size_t oldsz, size_t newsz)
 {
     if (newsz <= oldsz) return oldptr;
     void *newptr = arena_alloc(a, newsz);
-    char *newptr_char = newptr;
-    char *oldptr_char = oldptr;
+    char *newptr_char = (char*)newptr;
+    char *oldptr_char = (char*)oldptr;
     for (size_t i = 0; i < oldsz; ++i) {
         newptr_char[i] = oldptr_char[i];
     }
