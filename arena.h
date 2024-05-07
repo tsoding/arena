@@ -24,6 +24,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 
 #ifndef ARENA_ASSERT
 #include <assert.h>
@@ -63,6 +64,8 @@ void free_region(Region *r);
 // setting count-s of all the Region-s after the remembered a->end to 0.
 void *arena_alloc(Arena *a, size_t size_bytes);
 void *arena_realloc(Arena *a, void *oldptr, size_t oldsz, size_t newsz);
+char *arena_strdup(Arena *a, const char *cstr);
+void *arena_memdup(Arena *a, void *data, size_t size);
 
 void arena_reset(Arena *a);
 void arena_free(Arena *a);
@@ -233,6 +236,20 @@ void *arena_realloc(Arena *a, void *oldptr, size_t oldsz, size_t newsz)
         newptr_char[i] = oldptr_char[i];
     }
     return newptr;
+}
+
+char *arena_strdup(Arena *a, const char *cstr)
+{
+    size_t n = strlen(cstr);
+    char *dup = (char*)arena_alloc(a, n + 1);
+    memcpy(dup, cstr, n);
+    dup[n] = '\0';
+    return dup;
+}
+
+void *arena_memdup(Arena *a, void *data, size_t size)
+{
+    return memcpy(arena_alloc(a, size), data, size);
 }
 
 void arena_reset(Arena *a)
