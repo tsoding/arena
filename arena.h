@@ -67,6 +67,28 @@ void *arena_realloc(Arena *a, void *oldptr, size_t oldsz, size_t newsz);
 void arena_reset(Arena *a);
 void arena_free(Arena *a);
 
+#define ARENA_DA_INIT_CAP 256
+
+#ifdef __cplusplus
+    #define cast_ptr(ptr) (decltype(ptr))
+#else
+    #define cast_ptr(...)
+#endif
+
+#define arena_da_append(a, da, item)                                                          \
+    do {                                                                                      \
+        if ((da)->count >= (da)->capacity) {                                                  \
+            size_t new_capacity = (da)->capacity == 0 ? ARENA_DA_INIT_CAP : (da)->capacity*2; \
+            (da)->items = cast_ptr((da)->items)arena_realloc(                                 \
+                (a), (da)->items,                                                             \
+                (da)->capacity*sizeof(*(da)->items),                                          \
+                new_capacity*sizeof(*(da)->items));                                           \
+            (da)->capacity = new_capacity;                                                    \
+        }                                                                                     \
+                                                                                              \
+        (da)->items[(da)->count++] = (item);                                                  \
+    } while (0)
+
 #endif // ARENA_H_
 
 #ifdef ARENA_IMPLEMENTATION
