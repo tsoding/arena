@@ -103,7 +103,6 @@ void arena_free(Arena *a);
 
 #endif // ARENA_H_
 
-#define ARENA_IMPLEMENTATION
 #ifdef ARENA_IMPLEMENTATION
 
 #if ARENA_BACKEND == ARENA_BACKEND_LIBC_MALLOC
