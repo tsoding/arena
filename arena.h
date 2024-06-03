@@ -75,6 +75,7 @@ void *arena_memdup(Arena *a, void *data, size_t size);
 char *arena_sprintf(Arena *a, const char *format, ...);
 #endif // ARENA_NOSTDIO
 
+size_t arena_bytes(Arena *a);
 void arena_reset(Arena *a);
 void arena_free(Arena *a);
 
@@ -277,6 +278,14 @@ char *arena_sprintf(Arena *a, const char *format, ...)
     return result;
 }
 #endif // ARENA_NOSTDIO
+
+size_t arena_bytes(Arena *a) {
+	size_t bytes_total = 0;
+	for (Region* r = a->begin; r != NULL; r = r->next) {
+		bytes_total += r->count * sizeof(uintptr_t);
+	}
+	return bytes_total;
+}
 
 void arena_reset(Arena *a)
 {
