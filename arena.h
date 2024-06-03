@@ -103,6 +103,7 @@ void arena_free(Arena *a);
 
 #endif // ARENA_H_
 
+#define ARENA_IMPLEMENTATION
 #ifdef ARENA_IMPLEMENTATION
 
 #if ARENA_BACKEND == ARENA_BACKEND_LIBC_MALLOC
@@ -282,7 +283,7 @@ char *arena_sprintf(Arena *a, const char *format, ...)
 size_t arena_bytes(Arena *a) {
 	size_t bytes_total = 0;
 	for (Region* r = a->begin; r != NULL; r = r->next) {
-		bytes_total += r->count * 8;
+		bytes_total += r->count * sizeof(uintptr_t);
 	}
 	return bytes_total;
 }
