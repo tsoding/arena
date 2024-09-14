@@ -132,8 +132,40 @@ void free_region(Region *r)
 Region *new_region(size_t capacity)
 {
     size_t size_bytes = sizeof(Region) + sizeof(uintptr_t) * capacity;
+
+#if defined(ARENA_HUGEPAGES)
+#define ARENA_ALIGN_POW2(value, align) (((value) + (align) - 1) & ~((align) - 1))
+
+    // NOTE: assuming 2MB transparent hugepage size (common on x86_64 systems).
+    size_t hugepage_size = 2 << 20;
+    size_bytes = ARENA_ALIGN_POW2(size_bytes, hugepage_size);
+    capacity = (size_bytes - sizeof(Region)) / sizeof(uintptr_t);
+    size_t fudged_size_bytes = size_bytes + hugepage_size;
+
+    uint8_t *fudged_allocation = mmap(NULL, fudged_size_bytes, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+    ARENA_ASSERT(fudged_allocation != MAP_FAILED);
+
+    uint8_t *aligned_allocation = (uint8_t *)ARENA_ALIGN_POW2((uintptr_t)fudged_allocation, (uintptr_t)hugepage_size);
+
+    size_t wasted_leading_bytes = (size_t)(aligned_allocation - fudged_allocation);
+    if(wasted_leading_bytes)
+    {
+        munmap(fudged_allocation, wasted_leading_bytes);
+    }
+
+    size_t wasted_trailing_bytes = hugepage_size - wasted_leading_bytes;
+    if(wasted_trailing_bytes)
+    {
+        munmap(aligned_allocation + size_bytes, wasted_trailing_bytes);
+    }
+
+    madvise(aligned_allocation, size_bytes, MADV_HUGEPAGE);
+
+    Region *r = (Region *)aligned_allocation;
+#else
     Region *r = mmap(NULL, size_bytes, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
     ARENA_ASSERT(r != MAP_FAILED);
+#endif
     r->next = NULL;
     r->count = 0;
     r->capacity = capacity;
