@@ -175,6 +175,12 @@ Region *new_region(size_t capacity)
 void free_region(Region *r)
 {
     size_t size_bytes = sizeof(Region) + sizeof(uintptr_t) * r->capacity;
+#if defined(ARENA_HUGEPAGES)
+    // NOTE: assuming 2MB transparent hugepage size (common on x86_64 systems).
+    size_t hugepage_size = 2 << 20;
+    size_bytes = ARENA_ALIGN_POW2(size_bytes, hugepage_size);
+#endif
+
     int ret = munmap(r, size_bytes);
     ARENA_ASSERT(ret == 0);
 }
