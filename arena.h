@@ -58,15 +58,16 @@ typedef struct {
     Region *begin, *end;
 } Arena;
 
+typedef struct  {
+    Region *region;
+    size_t count;
+} Arena_Mark;
+
 #define REGION_DEFAULT_CAPACITY (8*1024)
 
 Region *new_region(size_t capacity);
 void free_region(Region *r);
 
-// TODO: snapshot/rewind capability for the arena
-// - Snapshot should be combination of a->end and a->end->count.
-// - Rewinding should be restoring a->end and a->end->count from the snapshot and
-// setting count-s of all the Region-s after the remembered a->end to 0.
 void *arena_alloc(Arena *a, size_t size_bytes);
 void *arena_realloc(Arena *a, void *oldptr, size_t oldsz, size_t newsz);
 char *arena_strdup(Arena *a, const char *cstr);
@@ -75,8 +76,11 @@ void *arena_memdup(Arena *a, void *data, size_t size);
 char *arena_sprintf(Arena *a, const char *format, ...);
 #endif // ARENA_NOSTDIO
 
+Arena_Mark arena_snapshot(Arena *a);
 void arena_reset(Arena *a);
+void arena_rewind(Arena *a, Arena_Mark m);
 void arena_free(Arena *a);
+void arena_trim(Arena *a);
 
 #define ARENA_DA_INIT_CAP 256
 
@@ -278,6 +282,13 @@ char *arena_sprintf(Arena *a, const char *format, ...)
 }
 #endif // ARENA_NOSTDIO
 
+Arena_Mark arena_snapshot(Arena *a){
+    Arena_Mark m;
+    m.region = a->end;
+    m.count  = a->end->count;
+    return m;
+}
+
 void arena_reset(Arena *a)
 {
     for (Region *r = a->begin; r != NULL; r = r->next) {
@@ -285,6 +296,16 @@ void arena_reset(Arena *a)
     }
 
     a->end = a->begin;
+}
+
+void arena_rewind(Arena *a, Arena_Mark m)
+{
+    m.region->count = m.count;
+    for (Region *r = m.region->next; r != NULL; r = r->next) {
+        r->count = 0;
+    }
+
+    a->end = m.region;
 }
 
 void arena_free(Arena *a)
@@ -297,6 +318,16 @@ void arena_free(Arena *a)
     }
     a->begin = NULL;
     a->end = NULL;
+}
+
+void arena_trim(Arena *a){
+    Region *r = a->end->next;
+    while (r) {
+        Region *r0 = r;
+        r = r->next;
+        free_region(r0);
+    }
+    a->end->next = NULL;
 }
 
 #endif // ARENA_IMPLEMENTATION
