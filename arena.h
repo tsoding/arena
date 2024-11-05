@@ -282,10 +282,18 @@ char *arena_sprintf(Arena *a, const char *format, ...)
 }
 #endif // ARENA_NOSTDIO
 
-Arena_Mark arena_snapshot(Arena *a){
+Arena_Mark arena_snapshot(Arena *a)
+{
     Arena_Mark m;
-    m.region = a->end;
-    m.count  = a->end->count;
+    if(a->end == NULL){ //snapshot of uninitialized arena
+        ARENA_ASSERT(a->begin == NULL);
+        m.region = a->end;
+        m.count  = 0;
+    }else{
+        m.region = a->end;
+        m.count  = a->end->count;
+    }
+
     return m;
 }
 
@@ -300,6 +308,11 @@ void arena_reset(Arena *a)
 
 void arena_rewind(Arena *a, Arena_Mark m)
 {
+    if(m.region == NULL){ //snapshot of uninitialized arena
+        arena_reset(a);   //leave allocation
+        return;
+    }
+
     m.region->count = m.count;
     for (Region *r = m.region->next; r != NULL; r = r->next) {
         r->count = 0;
