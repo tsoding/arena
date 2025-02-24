@@ -24,7 +24,6 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include <string.h>
 
 #ifndef ARENA_NOSTDIO
 #include <stdarg.h>
@@ -230,7 +229,32 @@ void free_region(Region *r)
 }
 
 #elif ARENA_BACKEND == ARENA_BACKEND_WASM_HEAPBASE
-#  error "TODO: WASM __heap_base backend is not implemented yet"
+
+// Stolen from https://surma.dev/things/c-to-webassembly/
+extern unsigned char __heap_base;
+unsigned char* bump_pointer = &__heap_base;
+// TODO: provide a way to deallocate all the arenas at once by setting bump_pointer back to &__heap_base?
+
+Region *new_region(size_t capacity)
+{
+    size_t size_bytes = sizeof(Region) + sizeof(uintptr_t)*capacity;
+    Region *r = (void*)bump_pointer;
+    bump_pointer += size_bytes;
+    r->next = NULL;
+    r->count = 0;
+    r->capacity = capacity;
+    return r;
+}
+
+void free_region(Region *r)
+{
+    // Since ARENA_BACKEND_WASM_HEAPBASE uses a primitive bump allocator to
+    // allocate the regions, free_region() does nothing. It is generally
+    // not recommended to free arenas anyway since it is better to keep
+    // reusing already allocated memory with arena_reset().
+    (void) r;
+}
+
 #else
 #  error "Unknown Arena backend"
 #endif
@@ -282,18 +306,33 @@ void *arena_realloc(Arena *a, void *oldptr, size_t oldsz, size_t newsz)
     return newptr;
 }
 
+size_t arena_strlen(const char *s)
+{
+    size_t n = 0;
+    while (*s++) n++;
+    return n;
+}
+
+void *arena_memcpy(void *dest, const void *src, size_t n)
+{
+    char *d = dest;
+    const char *s = src;
+    for (; n; n--) *d++ = *s++;
+    return dest;
+}
+
 char *arena_strdup(Arena *a, const char *cstr)
 {
-    size_t n = strlen(cstr);
+    size_t n = arena_strlen(cstr);
     char *dup = (char*)arena_alloc(a, n + 1);
-    memcpy(dup, cstr, n);
+    arena_memcpy(dup, cstr, n);
     dup[n] = '\0';
     return dup;
 }
 
 void *arena_memdup(Arena *a, void *data, size_t size)
 {
-    return memcpy(arena_alloc(a, size), data, size);
+    return arena_memcpy(arena_alloc(a, size), data, size);
 }
 
 #ifndef ARENA_NOSTDIO
