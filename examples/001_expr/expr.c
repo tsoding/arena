@@ -14,21 +14,19 @@
         platform_write(write_buffer, n);
         return n;
     }
-    #define abort(...)
+    #define ARENA_BACKEND ARENA_BACKEND_WASM_HEAPBASE
+    #define ARENA_NOSTDIO
+    #define ARENA_ASSERT(cond) (!(cond) ? printf("%s:%d: %s: Assertion `%s' failed.", __FILE__, __LINE__, __func__, #cond), __builtin_trap() : 0)
 #else
-#include <stdio.h>
+    #include <stdio.h>
 #endif // PLATFORM_WASM
+
 #include <stdbool.h>
 
 #define ARENA_IMPLEMENTATION
-#ifdef PLATFORM_WASM
-    #define ARENA_BACKEND ARENA_BACKEND_WASM_HEAPBASE
-    #define ARENA_NOSTDIO
-    #define ARENA_ASSERT(...)
-#endif // PLATFORM_WASM
 #include "arena.h"
 
-Arena nodes = {0};
+static Arena nodes = {0};
 
 typedef enum {
     NK_NUMB,
@@ -103,8 +101,7 @@ void node_print(Node *root)
         printf(")");
         break;
     default:
-        printf("UNREACHABLE\n");
-        abort();
+        ARENA_ASSERT(false && "UNREACHABLE");
     }
 }
 

@@ -11,6 +11,5 @@ let wasm;
             },
         }
     });
-    console.log(wasm);
     wasm.instance.exports.main();
 })()
