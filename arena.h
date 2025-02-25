@@ -231,7 +231,10 @@ void free_region(Region *r)
 #elif ARENA_BACKEND == ARENA_BACKEND_WASM_HEAPBASE
 
 // Stolen from https://surma.dev/things/c-to-webassembly/
+
 extern unsigned char __heap_base;
+// Since ARENA_BACKEND_WASM_HEAPBASE entirely hijacks __heap_base it is expected that no other means of memory
+// allocation are used except the arenas.
 unsigned char* bump_pointer = &__heap_base;
 // TODO: provide a way to deallocate all the arenas at once by setting bump_pointer back to &__heap_base?
 
