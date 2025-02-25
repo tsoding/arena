@@ -62,7 +62,9 @@ typedef struct  {
     size_t count;
 } Arena_Mark;
 
-#define REGION_DEFAULT_CAPACITY (8*1024)
+#ifndef ARENA_REGION_DEFAULT_CAPACITY
+#define ARENA_REGION_DEFAULT_CAPACITY (8*1024)
+#endif // ARENA_REGION_DEFAULT_CAPACITY
 
 Region *new_region(size_t capacity);
 void free_region(Region *r);
@@ -266,7 +268,7 @@ void free_region(Region *r)
 // Should collect things like:
 // - How many times new_region was called
 // - How many times existing region was skipped
-// - How many times allocation exceeded REGION_DEFAULT_CAPACITY
+// - How many times allocation exceeded ARENA_REGION_DEFAULT_CAPACITY
 
 void *arena_alloc(Arena *a, size_t size_bytes)
 {
@@ -274,7 +276,7 @@ void *arena_alloc(Arena *a, size_t size_bytes)
 
     if (a->end == NULL) {
         ARENA_ASSERT(a->begin == NULL);
-        size_t capacity = REGION_DEFAULT_CAPACITY;
+        size_t capacity = ARENA_REGION_DEFAULT_CAPACITY;
         if (capacity < size) capacity = size;
         a->end = new_region(capacity);
         a->begin = a->end;
@@ -286,7 +288,7 @@ void *arena_alloc(Arena *a, size_t size_bytes)
 
     if (a->end->count + size > a->end->capacity) {
         ARENA_ASSERT(a->end->next == NULL);
-        size_t capacity = REGION_DEFAULT_CAPACITY;
+        size_t capacity = ARENA_REGION_DEFAULT_CAPACITY;
         if (capacity < size) capacity = size;
         a->end->next = new_region(capacity);
         a->end = a->end->next;
