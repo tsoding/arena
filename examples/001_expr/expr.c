@@ -155,16 +155,9 @@ Node *parse_binop(Source *src)
     Node *node = arena_alloc(&nodes, sizeof(Node));
     node->binop.lhs = lhs;
     switch (*src->cursor) {
-    case '+':
-        node->kind = NK_PLUS;
-        break;
-    case '*':
-        node->kind = NK_MULT;
-        break;
-    default:
-        source_location(src);
-        printf("ERROR: unexpected character '%c'. Expected '+' or '*'\n", *src->cursor);
-        return NULL;
+    case '+': node->kind = NK_PLUS; break;
+    case '*': node->kind = NK_MULT; break;
+    default:  ARENA_ASSERT(false && "UNREACHABLE");
     }
     src->cursor += 1;
     node->binop.rhs = parse_expr(src);
