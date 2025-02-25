@@ -79,7 +79,7 @@ void node_print(Node *root, int level)
 {
     switch (root->kind) {
     case NK_NUMB:
-        printf("%*s- %d\n", 2*level, "", root->number);
+        printf("%*s- number: %d\n", 2*level, "", root->number);
         break;
     case NK_PLUS:
         printf("%*s- plus:\n", 2*level, "");
@@ -180,6 +180,15 @@ Source cstr_to_src(const char *cstr)
     };
 }
 
+size_t count_regions(Arena a)
+{
+    size_t n = 0;
+    for (Region *iter = a.begin; iter != NULL; iter = iter->next) {
+        n++;
+    }
+    return n;
+}
+
 int main(void)
 {
     Source src = cstr_to_src("((2*17)+(10*3))+(5*(1+1))");
@@ -195,17 +204,14 @@ int main(void)
 
     printf("\n");
     printf("Arena Summary:\n");
-    printf("  Regions:\n");
+    printf("  Default region size: %d words (%zu bytes)\n", ARENA_REGION_DEFAULT_CAPACITY, ARENA_REGION_DEFAULT_CAPACITY*sizeof(uintptr_t));
+    printf("  Regions (%zu):\n", count_regions(nodes));
     size_t n = 0;
     for (Region *iter = nodes.begin; iter != NULL; iter = iter->next) {
-        printf("    Region %zu: capacity %zu words (%zu bytes), count: %zu words (%zu bytes)\n",
-               n,
-               iter->capacity, iter->capacity*sizeof(uintptr_t),
-               iter->count, iter->count*sizeof(uintptr_t));
+        printf("    Region %zu: address = %p, capacity = %zu words (%zu bytes), count = %zu words (%zu bytes)\n", 
+               n, iter, iter->capacity, iter->capacity*sizeof(uintptr_t), iter->count, iter->count*sizeof(uintptr_t));
         n += 1;
     }
-    printf("  Arena allocated %zu regions\n", n);
-    printf("  Default region size %d words (%zu bytes)\n", ARENA_REGION_DEFAULT_CAPACITY, ARENA_REGION_DEFAULT_CAPACITY*sizeof(uintptr_t));
 
     return 0;
 }
