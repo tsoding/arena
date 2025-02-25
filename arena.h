@@ -108,20 +108,20 @@ void arena_trim(Arena *a);
     } while (0)
 
 // Append several items to a dynamic array
-#define arena_da_append_many(a, da, new_items, new_items_count)                                 \
-    do {                                                                                        \
-        if ((da)->count + (new_items_count) > (da)->capacity) {                                 \
-            size_t new_capacity = (da)->capacity;                                               \
-            if (new_capacity == 0) new_capacity = ARENA_DA_INIT_CAP;                            \
-            while ((da)->count + (new_items_count) > new_capacity) new_capacity *= 2;           \
-            (da)->items = cast_ptr((da)->items)arena_realloc(                                   \
-                (a), (da)->items,                                                               \
-                (da)->capacity*sizeof(*(da)->items),                                            \
-                new_capacity*sizeof(*(da)->items));                                             \
-            (da)->capacity = new_capacity;                                                      \
-        }                                                                                       \
-        memcpy((da)->items + (da)->count, (new_items), (new_items_count)*sizeof(*(da)->items)); \
-        (da)->count += (new_items_count);                                                       \
+#define arena_da_append_many(a, da, new_items, new_items_count)                                       \
+    do {                                                                                              \
+        if ((da)->count + (new_items_count) > (da)->capacity) {                                       \
+            size_t new_capacity = (da)->capacity;                                                     \
+            if (new_capacity == 0) new_capacity = ARENA_DA_INIT_CAP;                                  \
+            while ((da)->count + (new_items_count) > new_capacity) new_capacity *= 2;                 \
+            (da)->items = cast_ptr((da)->items)arena_realloc(                                         \
+                (a), (da)->items,                                                                     \
+                (da)->capacity*sizeof(*(da)->items),                                                  \
+                new_capacity*sizeof(*(da)->items));                                                   \
+            (da)->capacity = new_capacity;                                                            \
+        }                                                                                             \
+        arena_memcpy((da)->items + (da)->count, (new_items), (new_items_count)*sizeof(*(da)->items)); \
+        (da)->count += (new_items_count);                                                             \
     } while (0)
 
 // Append a sized buffer to a string builder
@@ -131,7 +131,7 @@ void arena_trim(Arena *a);
 #define arena_sb_append_cstr(a, sb, cstr)  \
     do {                                   \
         const char *s = (cstr);            \
-        size_t n = strlen(s);              \
+        size_t n = arena_strlen(s);        \
         arena_da_append_many(a, sb, s, n); \
     } while (0)
 
