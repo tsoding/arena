@@ -16,12 +16,24 @@
     }
     #define ARENA_BACKEND ARENA_BACKEND_WASM_HEAPBASE
     #define ARENA_NOSTDIO
+    // We are using __builtin_trap() because we are assuming only clang can compile to wasm as of today
     #define ARENA_ASSERT(cond) (!(cond) ? printf("%s:%d: %s: Assertion `%s' failed.", __FILE__, __LINE__, __func__, #cond), __builtin_trap() : 0)
 #else
     #include <stdio.h>
 #endif // PLATFORM_WASM
 
 #include <stdbool.h>
+
+// Implementing or own is_digit and is_print, because ctype is not available on wasm32 in clang for some reason
+bool is_digit(char x)
+{
+    return '0' <= x && x <= '9';
+}
+bool is_print(char x)
+{
+    // Stolen from musl
+    return (unsigned)x-0x20 < 0x5f;
+}
 
 #define ARENA_REGION_DEFAULT_CAPACITY 10
 #define ARENA_IMPLEMENTATION
@@ -58,24 +70,6 @@ Node *node_number(int number)
     return node;
 }
 
-Node *node_plus(Node *lhs, Node *rhs)
-{
-    Node *node = arena_alloc(&nodes, sizeof(Node));
-    node->kind = NK_PLUS;
-    node->binop.lhs = lhs;
-    node->binop.rhs = rhs;
-    return node;
-}
-
-Node *node_mult(Node *lhs, Node *rhs)
-{
-    Node *node = arena_alloc(&nodes, sizeof(Node));
-    node->kind = NK_MULT;
-    node->binop.lhs = lhs;
-    node->binop.rhs = rhs;
-    return node;
-}
-
 typedef struct {
     const char *begin;
     const char *cursor;
@@ -102,19 +96,33 @@ void node_print(Node *root, int level)
     }
 }
 
-void source_location(Source *src)
+void report_source_location(Source *src)
 {
     int n = src->cursor - src->begin;
     printf("%s\n", src->begin);
     printf("%*s^\n", n, "");
 }
 
-Node *parse_expr(Source *src);
-
-bool is_digit(char x)
+void report_current_character(Source *src)
 {
-    return '0' <= x && x <= '9';
+    if (*src->cursor == '\0') {
+        printf("end of source");
+    } else if (is_print(*src->cursor)) {
+        printf("character '%c'", *src->cursor);
+    } else {
+        printf("byte %02x", (unsigned char)*src->cursor);
+    }
 }
+
+void report_unexpected_error(Source *src, const char *what_was_expected)
+{
+    report_source_location(src);
+    printf("ERROR: Unexpected ");
+    report_current_character(src);
+    printf(". Expected %s.\n", what_was_expected);
+}
+
+Node *parse_expr(Source *src);
 
 Node *parse_primary(Source *src)
 {
@@ -123,8 +131,7 @@ Node *parse_primary(Source *src)
         Node *expr = parse_expr(src);
         if (expr == NULL) return NULL;
         if (*src->cursor != ')') {
-            source_location(src);
-            printf("ERROR: expected ')' but got '%c'\n", *src->cursor);
+            report_unexpected_error(src, "')'");
             return NULL;
         }
         src->cursor += 1;
@@ -136,13 +143,8 @@ Node *parse_primary(Source *src)
             src->cursor += 1;
         }
         return node_number(n);
-    } else if (*src->cursor == '\0'){
-        source_location(src);
-        printf("ERROR: unexpected end of source\n");
-        return NULL;
     } else {
-        source_location(src);
-        printf("ERROR: unexpected character '%c'. Expected '(' or a number\n", *src->cursor);
+        report_unexpected_error(src, "'(' or a number");
         return NULL;
     }
 }
@@ -184,6 +186,10 @@ int main(void)
     printf("Source: %s\n", src.begin);
     Node *expr = parse_expr(&src);
     if (expr == NULL) return 1;
+    if (*src.cursor != '\0') {
+        report_unexpected_error(&src, "end of source");
+        return 1;
+    }
     printf("Parsed AST:\n");
     node_print(expr, 1);
 
