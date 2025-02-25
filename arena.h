@@ -83,7 +83,9 @@ void arena_rewind(Arena *a, Arena_Mark m);
 void arena_free(Arena *a);
 void arena_trim(Arena *a);
 
+#ifndef ARENA_DA_INIT_CAP
 #define ARENA_DA_INIT_CAP 256
+#endif // ARENA_DA_INIT_CAP
 
 #ifdef __cplusplus
     #define cast_ptr(ptr) (decltype(ptr))
