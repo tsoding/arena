@@ -1,4 +1,4 @@
-#ifdef PLATFORM_WASM
+#ifdef __wasm__
     #include <stdarg.h>
     #define STB_SPRINTF_IMPLEMENTATION
     #include "stb_sprintf.h"
@@ -20,7 +20,7 @@
     #define ARENA_ASSERT(cond) (!(cond) ? printf("%s:%d: %s: Assertion `%s' failed.", __FILE__, __LINE__, __func__, #cond), __builtin_trap() : 0)
 #else
     #include <stdio.h>
-#endif // PLATFORM_WASM
+#endif // __wasm__
 
 #include <stdbool.h>
 
