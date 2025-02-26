@@ -208,7 +208,10 @@ int main(void)
     arena_alloc(&nodes, 64*1024);
     arena_alloc(&nodes, 64*1024);
     arena_alloc(&nodes, 64*1024);
-    arena_alloc(&nodes, 64*1024);
+    
+    // make sure we can touch the last byte of the region 
+    char *big_array = arena_alloc(&nodes, 64*1024);
+    big_array[64*1024 - 1] = 'a';
 
     printf("Arena Summary:\n");
     printf("  Default region size: %d words (%zu bytes)\n", ARENA_REGION_DEFAULT_CAPACITY, ARENA_REGION_DEFAULT_CAPACITY*sizeof(uintptr_t));
