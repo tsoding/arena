@@ -14,6 +14,8 @@
         platform_write(write_buffer, n);
         return n;
     }
+    // TODO: consider moving setting all these parameters on defined(__wasm__) to arena.h 'cause
+    // I think it's general useful for arena.h to just do all of this automatically for you.
     #define ARENA_BACKEND ARENA_BACKEND_WASM_HEAPBASE
     #define ARENA_NOSTDIO
     // We are using __builtin_trap() because we are assuming only clang can compile to wasm as of today
