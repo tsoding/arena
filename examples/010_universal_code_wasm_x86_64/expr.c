@@ -208,10 +208,14 @@ int main(void)
     printf("  Regions (%zu):\n", count_regions(nodes));
     size_t n = 0;
     for (Region *iter = nodes.begin; iter != NULL; iter = iter->next) {
-        printf("    Region %zu: address = %p, capacity = %zu words (%zu bytes), count = %zu words (%zu bytes)\n", 
+        printf("    Region %zu: address = %p, capacity = %zu words (%zu bytes), count = %zu words (%zu bytes)\n",
                n, iter, iter->capacity, iter->capacity*sizeof(uintptr_t), iter->count, iter->count*sizeof(uintptr_t));
         n += 1;
     }
+
+    // Just making a wasm32 page size allocation to test the wasm32 memory grow.
+    // x86_64 should not care because it's not a toy platform.
+    arena_alloc(&nodes, 64*1024);
 
     return 0;
 }
