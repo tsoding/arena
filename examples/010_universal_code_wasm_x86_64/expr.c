@@ -73,7 +73,7 @@ Node *node_number(int number)
 typedef struct {
     const char *begin;
     const char *cursor;
-} Source;
+} Lexer;
 
 void node_print(Node *root, int level)
 {
@@ -96,85 +96,85 @@ void node_print(Node *root, int level)
     }
 }
 
-void report_source_location(Source *src)
+void report_lexer_location(Lexer *lexer)
 {
-    int n = src->cursor - src->begin;
-    printf("%s\n", src->begin);
+    int n = lexer->cursor - lexer->begin;
+    printf("%s\n", lexer->begin);
     printf("%*s^\n", n, "");
 }
 
-void report_current_character(Source *src)
+void report_current_character(Lexer *lexer)
 {
-    if (*src->cursor == '\0') {
+    if (*lexer->cursor == '\0') {
         printf("end of source");
-    } else if (is_print(*src->cursor)) {
-        printf("character '%c'", *src->cursor);
+    } else if (is_print(*lexer->cursor)) {
+        printf("character '%c'", *lexer->cursor);
     } else {
-        printf("byte %02x", (unsigned char)*src->cursor);
+        printf("byte %02x", (unsigned char)*lexer->cursor);
     }
 }
 
-void report_unexpected_error(Source *src, const char *what_was_expected)
+void report_unexpected_error(Lexer *lexer, const char *what_was_expected)
 {
-    report_source_location(src);
+    report_lexer_location(lexer);
     printf("ERROR: Unexpected ");
-    report_current_character(src);
+    report_current_character(lexer);
     printf(". Expected %s.\n", what_was_expected);
 }
 
-Node *parse_expr(Source *src);
+Node *parse_expr(Lexer *lexer);
 
-Node *parse_primary(Source *src)
+Node *parse_primary(Lexer *lexer)
 {
-    if (*src->cursor == '(') {
-        src->cursor += 1;
-        Node *expr = parse_expr(src);
+    if (*lexer->cursor == '(') {
+        lexer->cursor += 1;
+        Node *expr = parse_expr(lexer);
         if (expr == NULL) return NULL;
-        if (*src->cursor != ')') {
-            report_unexpected_error(src, "')'");
+        if (*lexer->cursor != ')') {
+            report_unexpected_error(lexer, "')'");
             return NULL;
         }
-        src->cursor += 1;
+        lexer->cursor += 1;
         return expr;
-    } else if (is_digit(*src->cursor)) {
+    } else if (is_digit(*lexer->cursor)) {
         unsigned long long n = 0;
-        while (is_digit(*src->cursor)) {
-            n = n*10 + *src->cursor - '0';
-            src->cursor += 1;
+        while (is_digit(*lexer->cursor)) {
+            n = n*10 + *lexer->cursor - '0';
+            lexer->cursor += 1;
         }
         return node_number(n);
     } else {
-        report_unexpected_error(src, "'(' or a number");
+        report_unexpected_error(lexer, "'(' or a number");
         return NULL;
     }
 }
 
-Node *parse_binop(Source *src)
+Node *parse_binop(Lexer *lexer)
 {
-    Node *lhs = parse_primary(src);
+    Node *lhs = parse_primary(lexer);
     if (lhs == NULL) return NULL;
-    if (*src->cursor != '+' && *src->cursor != '*') return lhs;
+    if (*lexer->cursor != '+' && *lexer->cursor != '*') return lhs;
     Node *node = arena_alloc(&nodes, sizeof(Node));
     node->binop.lhs = lhs;
-    switch (*src->cursor) {
+    switch (*lexer->cursor) {
     case '+': node->kind = NK_PLUS; break;
     case '*': node->kind = NK_MULT; break;
     default:  ARENA_ASSERT(false && "UNREACHABLE");
     }
-    src->cursor += 1;
-    node->binop.rhs = parse_expr(src);
+    lexer->cursor += 1;
+    node->binop.rhs = parse_expr(lexer);
     if (node->binop.rhs == NULL) return NULL;
     return node;
 }
 
-Node *parse_expr(Source *src)
+Node *parse_expr(Lexer *lexer)
 {
-    return parse_binop(src);
+    return parse_binop(lexer);
 }
 
-Source cstr_to_src(const char *cstr)
+Lexer cstr_to_lexer(const char *cstr)
 {
-    return (Source) {
+    return (Lexer) {
         .begin = cstr,
         .cursor = cstr,
     };
@@ -191,12 +191,12 @@ size_t count_regions(Arena a)
 
 int main(void)
 {
-    Source src = cstr_to_src("((2*17)+(10*3))+(5*(1+1))");
-    printf("Source: %s\n", src.begin);
-    Node *expr = parse_expr(&src);
+    Lexer lexer = cstr_to_lexer("((2*17)+(10*3))+(5*(1+1))");
+    printf("Source: %s\n", lexer.begin);
+    Node *expr = parse_expr(&lexer);
     if (expr == NULL) return 1;
-    if (*src.cursor != '\0') {
-        report_unexpected_error(&src, "end of source");
+    if (*lexer.cursor != '\0') {
+        report_unexpected_error(&lexer, "end of source");
         return 1;
     }
     printf("Parsed AST:\n");
@@ -219,7 +219,6 @@ int main(void)
                n, iter, iter->capacity, iter->capacity*sizeof(uintptr_t), iter->count, iter->count*sizeof(uintptr_t));
         n += 1;
     }
-
 
     return 0;
 }
