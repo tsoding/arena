@@ -1,6 +1,6 @@
 # Expression Parser
 
-This example demonstrates how to write universal code that works both on WASM32 and x86_64.
+This example demonstrates how to write universal code that works both on WASM and x86_64.
 
 Here we implemented a classical example of parsing an AST of an expression allocating nodes in an arena so to no worry about deallocating each and individual node separately.
 

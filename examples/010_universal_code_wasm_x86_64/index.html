@@ -4,22 +4,46 @@
     <title>Expr</title>
   </head>
   <body>
-    <h1>Output:</h1>
-    <pre id="log"></pre>
+    <h1>wasm32 output:</h1>
+    <pre id="log32"></pre>
+    <h1>wasm64 output:</h1>
+    <pre id="log64"></pre>
     <script>
       (async () => {
-          const log = document.getElementById("log");
-          const url = "build/expr.wasm";
           const decoder = new TextDecoder();
-          const wasm = await WebAssembly.instantiateStreaming(fetch(url), {
+
+          const log32 = document.getElementById("log32");
+          const url32 = "build/expr32.wasm";
+          const wasm32 = await WebAssembly.instantiateStreaming(fetch(url32), {
               "env": {
                   "platform_write": (buf, len) => {
-                      const text = decoder.decode(new Uint8Array(wasm.instance.exports.memory.buffer, buf, len));
-                      log.innerText += text;
+                      const text = decoder.decode(new Uint8Array(wasm32.instance.exports.memory.buffer, buf, len));
+                      log32.innerText += text;
                   },
               }
           });
-          wasm.instance.exports.main();
+          wasm32.instance.exports.main();
+
+          const log64 = document.getElementById("log64");
+          const url64 = "build/expr64.wasm";
+          try {
+              const wasm64 = await WebAssembly.instantiateStreaming(fetch(url64), {
+                  "env": {
+                      "platform_write": (buf, len) => {
+                          // TODO: Isn't converting BigInt to Number loses addressing range? But the problem is
+                          // that Uint8Array does not accept BigInt as offset and length. What do we do here even?
+                          buf = Number(buf)
+                          len = Number(len)
+                          const text = decoder.decode(new Uint8Array(wasm64.instance.exports.memory.buffer, buf, len));
+                          log64.innerText += text;
+                      },
+                  }
+              });
+              wasm64.instance.exports.main(0, 0n);
+          } catch (e) {
+              log64.innerText += `Failed to run wasm64 example: ${e}`;
+              throw e;
+          }
       })()
     </script>
   </body>

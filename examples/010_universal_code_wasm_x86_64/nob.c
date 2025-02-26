@@ -22,7 +22,14 @@ int main(int argc, char **argv)
     cmd_append(&cmd, "-Wall", "-Wextra", "-I.");
     cmd_append(&cmd, "-DPLATFORM_WASM");
     cmd_append(&cmd, "--target=wasm32", "-Os", "-fno-builtin", "--no-standard-libraries", "-Wl,--no-entry", "-Wl,--export=main", "-Wl,--export=__heap_base", "-Wl,--allow-undefined");
-    cmd_append(&cmd, "-o", BUILD_FOLDER"expr.wasm", "expr.c");
+    cmd_append(&cmd, "-o", BUILD_FOLDER"expr32.wasm", "expr.c");
+    da_append(&procs, nob_cmd_run_async_and_reset(&cmd));
+
+    cmd_append(&cmd, "clang");
+    cmd_append(&cmd, "-Wall", "-Wextra", "-I.");
+    cmd_append(&cmd, "-DPLATFORM_WASM");
+    cmd_append(&cmd, "--target=wasm64", "-Os", "-fno-builtin", "--no-standard-libraries", "-Wl,--no-entry", "-Wl,--export=main", "-Wl,--export=__heap_base", "-Wl,--allow-undefined");
+    cmd_append(&cmd, "-o", BUILD_FOLDER"expr64.wasm", "expr.c");
     da_append(&procs, nob_cmd_run_async_and_reset(&cmd));
 
     if (!nob_procs_wait_and_reset(&procs)) return 1;
