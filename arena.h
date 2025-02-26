@@ -242,11 +242,24 @@ extern unsigned char __heap_base;
 unsigned char* bump_pointer = &__heap_base;
 // TODO: provide a way to deallocate all the arenas at once by setting bump_pointer back to &__heap_base?
 
+//__builtin_wasm_memory_size and __builtin_wasm_memory_grow are defined in units of page sizes
+#define ARENA_WASM_PAGE_SIZE 65536
+
 Region *new_region(size_t capacity)
 {
     size_t size_bytes = sizeof(Region) + sizeof(uintptr_t)*capacity;
     Region *r = (void*)bump_pointer;
     bump_pointer += size_bytes;
+    
+    //grow memory brk() style
+    if(bump_pointer > ARENA_WASM_PAGE_SIZE * __builtin_wasm_memory_size(0))
+    {
+        size_t delta = bump_pointer - ARENA_WASM_PAGE_SIZE * __builtin_wasm_memory_size(0);
+        delta = ((delta - 1) | (ARENA_WASM_PAGE_SIZE - 1)) + 1;
+        if(__builtin_wasm_memory_grow(0, delta / ARENA_WASM_PAGE_SIZE) < 0)
+            ARENA_ASSERT(0 && "__builtin_wasm_memory_grow() failed.");
+    }
+    
     r->next = NULL;
     r->count = 0;
     r->capacity = capacity;
