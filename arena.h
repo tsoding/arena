@@ -153,7 +153,7 @@ Region *new_region(size_t capacity)
     size_t size_bytes = sizeof(Region) + sizeof(uintptr_t)*capacity;
     // TODO: it would be nice if we could guarantee that the regions are allocated by ARENA_BACKEND_LIBC_MALLOC are page aligned
     Region *r = (Region*)malloc(size_bytes);
-    ARENA_ASSERT(r);
+    ARENA_ASSERT(r); // TODO: since ARENA_ASSERT is disableable go through all the places where we use it to check for failed memory allocation and return with NULL there.
     r->next = NULL;
     r->count = 0;
     r->capacity = capacity;
@@ -242,11 +242,28 @@ extern unsigned char __heap_base;
 unsigned char* bump_pointer = &__heap_base;
 // TODO: provide a way to deallocate all the arenas at once by setting bump_pointer back to &__heap_base?
 
+// __builtin_wasm_memory_size and __builtin_wasm_memory_grow are defined in units of page sizes
+#define ARENA_WASM_PAGE_SIZE (64*1024)
+
 Region *new_region(size_t capacity)
 {
     size_t size_bytes = sizeof(Region) + sizeof(uintptr_t)*capacity;
     Region *r = (void*)bump_pointer;
+
+    // grow memory brk() style
+    size_t current_memory_size = ARENA_WASM_PAGE_SIZE * __builtin_wasm_memory_size(0);
+    size_t desired_memory_size = (size_t) bump_pointer;
+    if (desired_memory_size > current_memory_size) {
+        size_t delta_bytes = desired_memory_size - current_memory_size;
+        size_t delta_pages = (delta_bytes + (ARENA_WASM_PAGE_SIZE - 1))/ARENA_WASM_PAGE_SIZE;
+        if (__builtin_wasm_memory_grow(0, delta_pages) < 0) {
+            ARENA_ASSERT(0 && "memory.grow failed");
+            return NULL;
+        }
+    }
+
     bump_pointer += size_bytes;
+
     r->next = NULL;
     r->count = 0;
     r->capacity = capacity;

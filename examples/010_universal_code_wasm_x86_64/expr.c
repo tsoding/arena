@@ -201,8 +201,15 @@ int main(void)
     }
     printf("Parsed AST:\n");
     node_print(expr, 1);
-
     printf("\n");
+
+    // Just making several wasm32 page size allocations to test the wasm32 memory grow.
+    // x86_64 should not care because it's not a toy platform unlike wasm.
+    arena_alloc(&nodes, 64*1024);
+    arena_alloc(&nodes, 64*1024);
+    arena_alloc(&nodes, 64*1024);
+    arena_alloc(&nodes, 64*1024);
+
     printf("Arena Summary:\n");
     printf("  Default region size: %d words (%zu bytes)\n", ARENA_REGION_DEFAULT_CAPACITY, ARENA_REGION_DEFAULT_CAPACITY*sizeof(uintptr_t));
     printf("  Regions (%zu):\n", count_regions(nodes));
@@ -213,9 +220,6 @@ int main(void)
         n += 1;
     }
 
-    // Just making a wasm32 page size allocation to test the wasm32 memory grow.
-    // x86_64 should not care because it's not a toy platform.
-    arena_alloc(&nodes, 64*1024);
 
     return 0;
 }
