@@ -1,0 +1,16 @@
+{
+  "name": "arena",
+  "version": "0.1.0",
+  "repo": "tsoding/arena",
+  "description": "Arena Allocator implementation in pure C as an stb-style single-file library.",
+  "keywords": [
+    "C",
+    "Memory Management",
+    "WASM"
+  ],
+  "license": "MIT",
+  "dependencies": {},
+  "src": [
+    "arena.h"
+  ]
+}
