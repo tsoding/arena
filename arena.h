@@ -253,7 +253,7 @@ Region *new_region(size_t capacity)
 
     // grow memory brk() style
     size_t current_memory_size = ARENA_WASM_PAGE_SIZE * __builtin_wasm_memory_size(0);
-    size_t desired_memory_size = (size_t) bump_pointer;
+    size_t desired_memory_size = (size_t) bump_pointer + size_bytes;
     if (desired_memory_size > current_memory_size) {
         size_t delta_bytes = desired_memory_size - current_memory_size;
         size_t delta_pages = (delta_bytes + (ARENA_WASM_PAGE_SIZE - 1))/ARENA_WASM_PAGE_SIZE;
