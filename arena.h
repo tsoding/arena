@@ -361,31 +361,26 @@ void *arena_memdup(Arena *a, void *data, size_t size)
 }
 
 #ifndef ARENA_NOSTDIO
-char *arena_sprintf(Arena *a, const char *format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    int n = vsnprintf(NULL, 0, format, args);
-    va_end(args);
-
-    ARENA_ASSERT(n >= 0);
-    char *result = (char*)arena_alloc(a, n + 1);
-    va_start(args, format);
-    vsnprintf(result, n + 1, format, args);
-    va_end(args);
-
-    return result;
-}
-
 char *arena_vsprintf(Arena *a, const char *format, va_list args)
 {
     va_list args_copy;
     va_copy(args_copy, args);
     int n = vsnprintf(NULL, 0, format, args_copy);
+    va_end(args_copy);
 
     ARENA_ASSERT(n >= 0);
     char *result = (char*)arena_alloc(a, n + 1);
     vsnprintf(result, n + 1, format, args);
+
+    return result;
+}
+
+char *arena_sprintf(Arena *a, const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    char *result = arena_vsprintf(a, format, args);
+    va_end(args);
 
     return result;
 }
