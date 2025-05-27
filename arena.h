@@ -376,7 +376,13 @@ char *arena_vsprintf(Arena *a, const char *format, va_list args)
     return result;
 }
 
-char *arena_sprintf(Arena *a, const char *format, ...)
+#if defined(__GNUC__) || defined(__clang__)
+#define CHECK_PRINTF_FMT(a, b) __attribute__ ((format (printf, a, b)))
+#else
+#define CHECK_PRINTF_FMT(...)
+#endif
+
+CHECK_PRINTF_FMT(2, 3) char *arena_sprintf(Arena *a, const char *format, ...)
 {
     va_list args;
     va_start(args, format);
